@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jar Fanmade (Google Auth & Cloud Sync)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Microsoft Blue: #0078D4
+                        'primary': '#0078D4', // Microsoft-style Blue
+                        'secondary': '#f3f4f6', // Light Gray
+                        'accent': '#107c10', // Microsoft Green (Excel/Teams)
+                        'danger': '#dc2626', // Red 600
+                        'background-light': '#ffffff', // Clean white background (Microsoft standard)
+                        'primary-dark': '#005a9e', // Darker Blue for hover
+                        'black-text': '#111827', // Dark text
+                        'border-gray': '#e5e7eb', // Light border
+                        'google-red': '#db4437', // Google Red
+                        'google-red-dark': '#c33023', // Darker Google Red
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* General styling remains the same */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--tw-colors-background-light);
+        }
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 0.5rem;
+            border: 1px solid var(--tw-colors-border-gray);
+            background-color: white;
+        }
+        .corporate-card-pro {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--tw-colors-border-gray);
+        }
+        .net-balance-highlight {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transform: scale(1.01);
+            transition: transform 0.2s;
+        }
+        .circular-button {
+            width: 50px; 
+            height: 50px; 
+            border-radius: 50%; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-shadow: 0 6px 10px -1px rgba(0, 0, 0, 0.15), 0 3px 6px -2px rgba(0, 0, 0, 0.1); 
+        }
+        .client-action-disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+            box-shadow: none !important;
+        }
+        .search-input-container input {
+            padding-left: 2.5rem;
+        }
+        .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 0.75rem;
+            transform: translateY(-50%);
+            color: #6b7280;
+        }
+        /* New Google Button Style */
+        .google-btn {
+            background-color: var(--tw-colors-google-red);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .google-btn:hover {
+            background-color: var(--tw-colors-google-red-dark);
+        }
+        .google-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            background-color: white;
+            border-radius: 50%;
+            padding: 2px;
+        }
+    </style>
+</head>
+<body class="p-6 md:p-10">
+    
+    <div id="data-dropdown-container" style="position: absolute; top: 20px; right: 40px; z-index: 50;">
+        <button id="cloud-status-btn" class="bg-danger text-white circular-button transition duration-150 transform hover:scale-110 focus:ring-4 focus:ring-danger/50"
+                aria-label="Cloud Status"
+                title="Status: Not Logged In">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path id="cloud-icon-path" stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.888a4 4 0 00-5.656 0l-4 4a4 4 0 005.656 5.656l1.102-1.101" />
+            </svg>
+        </button>
+    </div>
+    
+    <div id="app" class="max-w-6xl mx-auto space-y-10">
+        <header class="pb-6 border-b-2 border-primary/20 text-left">
+            <h1 class="text-4xl font-extrabold text-black-text tracking-tight uppercase">
+                Jar Fanmade (Google Auth & Cloud Sync)
+            </h1>
+        </header>
+
+        <div id="auth-container" class="max-w-lg mx-auto p-8 bg-white rounded-xl corporate-card-pro space-y-5 mt-10">
+            <h2 class="text-2xl font-bold text-primary text-center border-b border-primary/20 pb-3">Cloud Ledger Login</h2>
+            
+            <button onclick="signInWithGoogle()" class="w-full google-btn font-bold py-3 rounded-lg shadow-md transition duration-150 primary-action-btn">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyLjI1IDkuNjI1VjExLjkzNzVINy43MjcwM0MwIDYuOTM3NSAwLjY2NjUzNSA2LjUgMC42NjY1MzUgNi41QzQuNTExNTMgMi45NjkgOS4wNjc1IDAuOTM3NSA5LjA2NzUgMC45Mzc1QzE2LjUgMi4yNSAxNi44NzUgMTEuMjUgMTYuODc1IDExLjI1VjExLjkzNzVIODIuMTI1eiIgZmlsbD0iI0VBNDMzNSIvPgo8cGF0aCBkPSJNMjEuMTg3NSA5LjU2MjVIMTIuMjk1NEMxMi4xMTMyIDcuNTY0NSA5LjczNzUgNS43MDQ1IDcuMTM3NSA1LjcwNDVDMy45Mjk1IDUuNzA0NSAxLjA1MTUgOC42MzU1IDEuMDUxNSAxMi4zNjg1QzEuMDUxNSAxNi4wMjk1IDMuOTg2NSA5Ljg5OTUgNy4wODU1IDE5Ljg3NDVDOS43MzM1IDIyLjY3MTUgMTQuMjY3NSAyMy4wNjI1IDE4LjI3NzUgMjEuNTM4NUMyMC45ODg1IDIwLjUyOTUgMjIuOTc2NSAxOC42MTY1IDIzLjUwOTUgMTYuNjE3NUMyMy45MTc1IDE0LjczOTUgMjMuODQyNSAxMi41MDU1IDIxLjg0MjUgMTAuMjQ1NEMyMS4xNzQ1IDkuOTAyNSAyMS4wNDI1IDkuNjQyNSAyMS4xODc1IDkuNTYyNVoiIGZpbGw9IiM0Mjg1RjQiLz4KPHBhdGggZD0iTTE4LjM3NSAxNy45Mzc1QzE4LjM3NSAxNy45Mzc1IDguMTU0NSAxNC44Nzg1IDQuODU0NSAyMC43Nzg1QzMuMTQzNSAyNC40OTQ1IDcuMjU3NSAyNy45MTI1IDE1LjY5MjUgMjcuOTEyNUgxNy42Mjc1QzIwLjY3MzUgMjcuOTEyNSAyMS44Njk1IDI1LjQwMjUgMjEuODk0NSAyNS4yNzhDMjEuODk0NSAyNS4yNzggMjIuNjI0NSAyMi41MjI1IDIxLjE2MjUgMjAuOTYyNUMyMC4zMTI1IDE5LjY3NzUgMTguMzc1IDE3LjkzNzUgMTguMzc1IDE3LjkzNzVaIiBmaWxsPSIjRkJCQzA0Ii8+CjxwYXRoIGQ9Ik0zLjcwNjUgMTcuNjQ5NUMzLjcwNjUgMTcuNjQ5NSAxNS4zMTI1IDE0LjY1NDUgMTkuNTkzNSAyMC43NTQ1QzIxLjI1NzUgMjQuMzEwNSAxNi40NjA1IDI3LjgxNjUgMTIuMjg5NSAyNy44MTY1SDEwLjQ3NjVDNy40NzY1IDI3LjgxNjUgNi4xNDc1IDI0LjQ1MDUgNi4xMTM1IDI0LjI3NTVDNi4xMTM1IDI0LjI3NTUgNi4wOTU1IDIxLjU2MjUgNy4xMzY1IDE5LjYxMjVDOC4wNzA1IDE4LjA4NDUgMTAuNjc1NSAxNy40MTU1IDEwLjk1NTUgMTcuMjQ1NUgzLjcwNjVaIiBmaWxsPSIjMzRBMzg1Ii8+CgogICAgICAgIDxwYXRoIGQ9Ik0xMiAxMGMwLTUuNDkzIDQuMDA3LTkuNSAzLjkzLTkuMjVINC4xNjVMMi4wNDIgOS42MjVsLjExMi4xNThhNS4wMzIgNS4wMzIgMCAwIDEtLjEzMi40NTcgMy40OTkgMy40OTkgMCAwIDEtLjM5NC0uNzk0YzAgLjI4LjA2LjU0LjE1Mi43ODNhNS41NTMgNS41NTMgMCAwIDAtLjYxOC0xLjg0MSAzLjk4MSAzLjk4MSAwIDAgMS0uNzk4LS4yOTVMMi4wNzkgMTQuMzE4bDEuMzk5LjY2M2MuMDg1LS4xNjYuMTc3LS4zNDEuMjg2LS40OTVhNS4wMDggNS4wMDggMCAwIDEtLjIyNy40NjMgMi41NzIgMi41NzIgMCAwIDEtLjMyMS42MDcgMy45MzggMy45MzggMCAwIDEtLjQ0LS42MDVsMS41NjMgMS4yNzhjLjA0My4wNTYuMDk0LjEyMS4xNTUuMTk3YTQuOTg1IDQuOTg1IDAgMCAwLS4zNzUuNjU5IDQuMDcgNC4wNyAwIDAgMC0uNDk1LS42ODVsMS42MzIgMS40MzljLjAzNS4wMy4wNy4wNjkuMTA1LjEyMy4wNTEuMDUzLjEwNy4xMTguMTc0LjE5M2E1LjM3IDUuMzczIDAgMCAwLS40NjIuODMyIDQuMjUxIDQuMjUxIDAgMCAwLS41MjYtLjYwNWwxLjcxIDEuNDc1Yy4wMzIuMDMzLjA1Ni4wODcuMDg5LjE0LjA0Mi4wNTkuMDkzLjEyOS4xNTguMjA5LjAzNy4wNDcuMDc0LjA5My4xMS4xMzNhNS4xODkgNS4xODkgMCAwIDAtLjI4Mi40MzMgMy40NzIgMy40NzIgMCAwIDAtLjQyNS43OTZsMS42NjcgMS41NDhjLjAyMy4wMjEuMDQ2LjA1My4wNzkuMDkyLjA0LjA1LjA4LjEwNC4xMjkuMTcgMi42NTMgMy4zOTYgNi40ODUgMy42ODMgOS40NjggMy41ODUgMy45MjQtLjA0MSAzLjE3OC0uNTAyIDMuMDMtLjg3YS4xODQuMTg0IDAgMCAxLS4xMzUtLjIwMWMuNTg5LTQuNTQzLTEuMzgtNC4xMjItMi41Mi00LjUzMy0yLjIwMi0uNjgtMy4zMTktMi40MjgtMy45MTQtMy42NWEzLjg2IDMuODYgMCAwIDEtLjIzLS41NThjLS40MTctLjkyNC0uNTU3LTEuNDc3LS41NDgtMi4wMTV6IiBmaWxsPSIjRkJCQzA0Ii8+CjxwYXRoIGQ9Ik0xMiAyMi4yNWMtNi4zODcgMC05LjY0OC00LjMzLTkuODMzLTkuMjVhLjkxMy45MTMgMCAwIDEtLjg3NS0uMTIxYy0uMTgxLjI0LS4zNjYuNDg3LS41NTMuNzQ4Yy0uMzUyLjQ4LS41NTYuOTYtLjU2IDIuMTU5YTMuODQ4IDMuODQ4IDAgMCAwIC40NzUuODE1Yy4yMTQuMzE3LjQzNy42MDUuNjg3Ljg1Yy4xNTcuMTU5LjMyMS4yOTguNDg3LjQxNy42NjMuNDc1IDEuNDUzLjczNSAyLjQzNi43NTdoLjA0Mi4wMThhNS40NzggNS40NzggMCAwIDAtLjQ4OC42NThjLS4xNzguMjc1LS4zNTUuNTUxLS41MjguODMzYy0uMzkuNjUtLjY1IDEuMjg3LS43NTMgMi4wMTktLjExMi43NzEtLjA4NSAxLjQ5NS4wNjQgMi4xODkuMjE0IDEuMDM4LjY1MyAxLjkyIDEuMjE0IDIuNjY2Yy41Mi43MDkgMS4xNTUgMS4zNTUgMS44MjIgMS45NWMuNjY5LjU4MyAxLjM1MyAxLjA5NiAyLjEyNSAxLjU0NWE1Ljk0NSA1Ljk0NSAwIDAgMCAyLjQzLjc3MmMuMjUxLjAxLjUuMDE1Ljc0OC0uMDczeiIgZmlsbD0iIzNCNDAxQiIvPgo8cGF0aCBkPSJNMTEuNzYyIDUuMjM5Yy42NzguMDk0IDEuMTUxLjEyMiAxLjU1Mi4xNDJhMy40OTggMy40OTggMCAwIDEtLjQyNS43OTZjLS4zMzcuNDUzLS41NTguNzU5LS42NjcgMS4xMDFsLS44MjItLjU4NWMuMDYzLS4yLjEyNi0uNDQ1LjE5NC0uNzQ4LjE4My0uNzY2LjQ1OC0xLjQ0OC44MTgtMS45NjZaIiBmaWxsPSIjRkIxNTFCIi8+Cjwvc3ZnPg==" class="google-icon" alt="Google icon" />
+                Sign in with Google
+            </button>
+            
+            <div class="flex items-center space-x-2">
+                <hr class="flex-grow border-gray-300">
+                <span class="text-gray-500 text-sm">OR</span>
+                <hr class="flex-grow border-gray-300">
+            </div>
+            
+            <input type="email" id="auth-email" placeholder="Email" class="w-full p-3 border rounded-lg focus:border-primary focus:ring-1 focus:ring-primary transition duration-150">
+            <input type="password" id="auth-password" placeholder="Password" class="w-full p-3 border rounded-lg focus:border-primary focus:ring-1 focus:ring-primary transition duration-150">
+            
+            <button onclick="handleAuthAction(true)" class="w-full bg-primary text-white font-bold py-3 rounded-lg shadow-md hover:bg-primary-dark transition duration-150 primary-action-btn">
+                Log In
+            </button>
+            <button onclick="handleAuthAction(false)" class="w-full bg-accent/80 text-white font-bold py-3 rounded-lg shadow-md hover:bg-accent transition duration-150 primary-action-btn">
+                Sign Up (New User)
+            </button>
+            
+            <button onclick="logout()" id="logout-btn" style="display:none;" class="w-full bg-danger text-white font-bold py-3 rounded-lg shadow-md hover:bg-red-700 transition duration-150 primary-action-btn">
+                Log Out
+            </button>
+        </div>
+
+        <div id="app-content-area" style="display: none;">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl corporate-card-pro">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b border-gray-200 pb-3">🔍 Select Active Client</h2>
+                    <label for="client-search-input" class="block text-sm font-medium text-gray-600 mb-1">Search/Filter Client</label>
+                    
+                    <div class="search-input-container relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 search-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
+                        <input type="text" id="client-search-input" placeholder="Type name to search..." class="mb-4 block w-full rounded-lg border-gray-300 shadow-sm p-3 transition duration-150">
+                    </div>
+                    
+                    <label for="client-selector" class="block text-sm font-medium text-gray-600 mb-1">Active Client</label>
+                    <select id="client-selector" class="block w-full rounded-lg border-gray-300 shadow-sm p-3 bg-white font-semibold transition duration-150"></select>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl corporate-card-pro flex flex-col justify-between">
+                     <h2 class="text-xl font-bold text-primary mb-4 border-b border-primary/20 pb-3">➕ New Client Setup</h2>
+                     <p class="text-sm text-gray-600 mb-4">Create a new ledger and set a default hourly rate for a new client.</p>
+                     <button onclick="addNewClient()" class="w-full bg-primary text-white font-semibold py-3 px-4 rounded-lg shadow-xl hover:bg-primary-dark transition duration-150 primary-action-btn">
+                        + Add New Client
+                    </button>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl corporate-card-pro flex flex-col justify-between">
+                     <h2 class="text-xl font-bold text-gray-800 mb-4 border-b border-gray-200 pb-3">🔧 Client Actions</h2>
+                     <div class="space-y-3">
+                        <button onclick="renameClient()" id="rename-client-btn" class="w-full bg-gray-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-gray-600 transition duration-150 client-dependent-btn">
+                            Rename Client
+                        </button>
+                        
+                        <button onclick="deleteClient()" id="delete-client-btn" class="w-full bg-danger text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-red-700 transition duration-150 client-dependent-btn">
+                            Delete Client
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div id="content-area-main-structure">
+                
+                <div id="content-display-header">
+                    <div class="flex justify-between items-center mb-6 mt-8">
+                        <h2 class="text-3xl font-extrabold text-gray-900">
+                            Client: <span id="active-client-display" class="text-primary"></span>
+                        </h2>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl corporate-card-pro">
+                        <h3 class="text-xl font-bold text-gray-800 mb-5 border-b border-gray-100 pb-3">📊 Financial Overview</h3>
+                        <div id="summary-results">
+                            </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                        <div class="bg-white p-6 rounded-xl corporate-card-pro">
+                            <h3 class="text-xl font-bold text-primary mb-5 border-b border-primary/20 pb-3 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                📅 Task Entry
+                            </h3>
+                            
+                            <div class="space-y-5">
+                                <label class="block text-sm font-medium text-gray-700">Time Duration (Hr:Min:Sec)</label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <input type="number" id="task-hr-input" placeholder="Hr" class="client-dependent-input block w-full rounded-lg border-gray-300 shadow-sm p-3 text-center text-lg font-mono" min="0">
+                                    <input type="number" id="task-min-input" placeholder="Min" class="client-dependent-input block w-full rounded-lg border-gray-300 shadow-sm p-3 text-center text-lg font-mono" min="0" max="59">
+                                    <input type="number" id="task-sec-input" placeholder="Sec" class="client-dependent-input block w-full rounded-lg border-gray-300 shadow-sm p-3 text-center text-lg font-mono" min="0" max="59">
+                                </div>
+                            </div>
+                            
+                            <button onclick="addTask()" class="client-dependent-btn primary-action-btn mt-6 w-full bg-primary text-white font-extrabold py-3.5 rounded-lg shadow-xl hover:bg-primary-dark transition duration-150">
+                                ADD BILLED TIME
+                            </button>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-xl corporate-card-pro">
+                            <h3 class="text-xl font-bold text-accent mb-5 border-b border-accent/20 pb-3 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                                💳 Payment Entry
+                            </h3>
+                            
+                            <div class="space-y-5">
+                                <div>
+                                    <label for="payment-amount-input" class="block text-sm font-medium text-gray-700">Deposit Amount (₹)</label>
+                                    <input type="number" id="payment-amount-input" placeholder="₹ 0.00" class="client-dependent-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 text-xl font-extrabold text-accent" min="0">
+                                </div>
+                            </div>
+
+                            <button onclick="addPayment()" class="client-dependent-btn primary-action-btn mt-6 w-full bg-accent text-white font-extrabold py-3.5 rounded-lg shadow-xl hover:bg-emerald-700 transition duration-150">
+                                ADD DEPOSIT
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl corporate-card-pro mt-8">
+                        <h3 class="text-xl font-bold text-gray-800 mb-5 border-b border-gray-200 pb-3 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            ⚙️ Billing & Utility Actions
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div class="col-span-1 md:col-span-3">
+                                <label for="hourly-rate-input" class="block text-sm font-medium text-gray-700">Current Hourly Rate (₹)</label>
+                                <input type="number" id="hourly-rate-input" class="client-dependent-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 text-lg font-bold" min="1">
+                            </div>
+                            
+                            <button onclick="updateHourlyRate()" class="client-dependent-btn primary-action-btn bg-primary/80 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-primary-dark transition duration-150">
+                                Update Rate
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                🕒 Task History
+                            </h3>
+                            <div id="task-list" class="history-list corporate-card-pro">
+                                </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                                💵 Payment History
+                            </h3>
+                            <div id="payment-list" class="history-list corporate-card-pro">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="loading-state" class="text-center p-10 bg-white rounded-xl corporate-card-pro mt-8" style="display:none;">
+                    <h2 class="text-2xl font-bold text-primary mb-3">Loading Data...</h2>
+                    <p class="text-gray-600">Please wait while the application connects to the cloud database.</p>
+                 </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script>
+        // ⚠️ यहाँ अपनी Firebase कॉन्फ़िगरेशन विवरण भरें ⚠️
+        const firebaseConfig = {
+            apiKey: "AIzaSyCG9w-pUJq9FopmIUUPLUVMc03P84Rblgw", // <-- अपनी API Key यहाँ डालें
+            authDomain: "jar-ledger.firebaseapp.com",
+            databaseURL: "https://jar-ledger-default-rtdb.asia-southeast1.firebasedatabase.app", // <-- इसे अपनी Firebase DB URL से बदलें
+            projectId: "jar-ledger",
+        };
+
+        let database;
+        let auth;
+        let clientLedgersRef = null; 
+        let currentUserId = null;
+        
+        const DEFAULT_CLIENT_NAME = 'Default Client'; 
+        let clientLedgers = {
+            activeClientName: null, 
+            clients: {}
+        };
+        let isFirebaseReady = false;
+
+        try {
+             firebase.initializeApp(firebaseConfig);
+             database = firebase.database();
+             auth = firebase.auth();
+             isFirebaseReady = true;
+        } catch (e) {
+             console.error("Firebase Initialization Error:", e);
+             document.getElementById('auth-container').style.display = 'none';
+             document.getElementById('app-content-area').style.display = 'block';
+             document.getElementById('content-area-main-structure').innerHTML = `<h2 class="text-2xl font-bold text-danger mb-3">FATAL ERROR: Initialization Failed!</h2><p class="text-gray-600">Check console and configuration details.</p>`;
+        }
+        
+        // --- AUTHENTICATION FUNCTIONS ---
+
+        const handleAuthAction = (isLogin) => {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+
+            if (!email || !password) {
+                alert("Please enter both email and password.");
+                return;
+            }
+
+            if (isLogin) {
+                auth.signInWithEmailAndPassword(email, password)
+                    .catch(error => alert(`Login Failed: ${error.message}`));
+            } else {
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then(() => alert("Sign Up Successful! Please log in."))
+                    .catch(error => alert(`Sign Up Failed: ${error.message}`));
+            }
+        };
+
+        const signInWithGoogle = () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .catch(error => alert(`Google Sign-In Failed: ${error.message}`));
+        };
+
+        const logout = () => {
+            auth.signOut().catch(error => console.error("Logout Error:", error));
+        };
+
+        auth.onAuthStateChanged(user => {
+            const authContainer = document.getElementById('auth-container');
+            const appContent = document.getElementById('app-content-area');
+            const logoutBtn = document.getElementById('logout-btn');
+            const statusBtn = document.getElementById('cloud-status-btn');
+
+            if (user) {
+                // User is logged in
+                currentUserId = user.uid;
+                authContainer.style.display = 'none';
+                appContent.style.display = 'block';
+                logoutBtn.style.display = 'block';
+                statusBtn.style.backgroundColor = '#0078D4'; // Blue/Primary
+                statusBtn.title = `Status: Logged in as ${user.email}`;
+                document.getElementById('cloud-icon-path').setAttribute('d', 'M5 13l4 4L19 7'); // Checkmark icon
+
+                // Firebase Database Reference को यूज़र-विशिष्ट बनाएं
+                clientLedgersRef = database.ref(`users/${currentUserId}/clientLedgers`);
+                startRealtimeListener(); 
+                
+            } else {
+                // User is logged out
+                currentUserId = null;
+                clientLedgersRef = null;
+                authContainer.style.display = 'block';
+                appContent.style.display = 'none';
+                logoutBtn.style.display = 'none';
+                
+                statusBtn.style.backgroundColor = '#dc2626'; // Red/Danger
+                statusBtn.title = 'Status: Not Logged In';
+                document.getElementById('cloud-icon-path').setAttribute('d', 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.888a4 4 0 00-5.656 0l-4 4a4 4 0 005.656 5.656l1.102-1.101'); // Broken link icon
+                
+                // UI को साफ करें
+                clientLedgers = { activeClientName: null, clients: {} };
+                renderAllClientData();
+            }
+        });
+        
+        // --- DATA SYNC FUNCTIONS ---
+        // (Unchanged logic: saveDataToCloud, initializeDefaultClient, startRealtimeListener)
+
+        const saveDataToCloud = () => {
+             if (!clientLedgersRef || !isFirebaseReady || !currentUserId) return; 
+             
+             clientLedgersRef.set(clientLedgers)
+                 .catch((error) => {
+                     console.error("Error saving data to Firebase:", error);
+                     alert("Error: Could not save data. Check Firebase Rules and connection.");
+                 });
+        };
+        
+        const initializeDefaultClient = () => {
+             if (Object.keys(clientLedgers.clients).length === 0) {
+                 clientLedgers.clients[DEFAULT_CLIENT_NAME] = {
+                    tasks: [],
+                    payments: [],
+                    settings: {
+                        hourlyRate: 150
+                    }
+                };
+             }
+             
+             if (!clientLedgers.activeClientName || !clientLedgers.clients[clientLedgers.activeClientName]) {
+                 clientLedgers.activeClientName = Object.keys(clientLedgers.clients).sort()[0];
+                 saveDataToCloud(); 
+            }
+            
+            if (Object.keys(clientLedgers.clients).length === 1 && clientLedgers.activeClientName === DEFAULT_CLIENT_NAME) {
+                saveDataToCloud();
+            }
+        };
+
+        const startRealtimeListener = () => {
+             if (!clientLedgersRef || !isFirebaseReady) return; 
+
+             const loadingState = document.getElementById('loading-state');
+             const contentHeader = document.getElementById('content-display-header');
+             contentHeader.style.display = 'none';
+             loadingState.style.display = 'block';
+
+             clientLedgersRef.on('value', (snapshot) => {
+                 const data = snapshot.val();
+                 
+                 if (data && data.clients) {
+                     clientLedgers.clients = data.clients || {};
+                     clientLedgers.activeClientName = data.activeClientName || null;
+                 }
+                 
+                 initializeDefaultClient();
+                 renderAllClientData();
+
+             }, (error) => {
+                 console.error("Firebase Read Failed:", error);
+                 loadingState.innerHTML = `<h2 class="text-2xl font-bold text-danger mb-3">ERROR: Data Load Failed!</h2><p class="text-gray-600">Please check your Firebase Rules or network connection.</p>`;
+             });
+        };
+        
+        // --- UTILITY/CLIENT/ENTRY/RENDERING FUNCTIONS ---
+        // (All other functions remain the same as the final fixed version, using object-to-array handling.)
+
+        const getOrCreateClientData = (clientName) => {
+            if (!clientLedgers.clients[clientName]) {
+                clientLedgers.clients[clientName] = {
+                    tasks: [],
+                    payments: [],
+                    settings: {
+                        hourlyRate: 150
+                    }
+                };
+            }
+            return clientLedgers.clients[clientName];
+        };
+        
+        const decimalHoursToHMS = (decimalHours) => {
+            const totalSeconds = Math.round(decimalHours * 3600);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${hours}h ${minutes}m ${seconds}s`;
+        };
+
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(amount).replace('₹', '₹');
+        };
+
+        const formatDate = (dateString) => {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const date = new Date(dateString);
+            if (isNaN(date)) {
+                return 'Invalid Date';
+            }
+            return date.toLocaleDateString('en-IN', options); 
+        };
+
+        const setActiveClient = (clientName) => {
+            clientLedgers.activeClientName = clientName;
+            saveDataToCloud(); 
+        };
+        
+        const handleClientSelectionChange = (event) => {
+            setActiveClient(event.target.value);
+        };
+
+        const addNewClient = () => {
+            let newClientName = prompt("Enter New Client Name:");
+            if (newClientName && newClientName.trim() !== "") {
+                newClientName = newClientName.trim();
+                if (clientLedgers.clients[newClientName]) {
+                    alert(`Client "${newClientName}" already exists.`);
+                    return;
+                }
+                getOrCreateClientData(newClientName);
+                setActiveClient(newClientName); 
+            }
+        };
+        
+        const renameClient = () => {
+            const oldName = clientLedgers.activeClientName;
+            if (!oldName || oldName === DEFAULT_CLIENT_NAME) {
+                alert("Cannot rename the Default Client.");
+                return;
+            }
+            let newName = prompt(`Rename "${oldName}" to:`);
+            if (newName && newName.trim() !== "" && newName.trim() !== oldName) {
+                newName = newName.trim();
+                if (clientLedgers.clients[newName]) {
+                    alert(`Client "${newName}" already exists.`);
+                    return;
+                }
+                
+                clientLedgers.clients[newName] = clientLedgers.clients[oldName];
+                delete clientLedgers.clients[oldName];
+                setActiveClient(newName); 
+                alert(`Client renamed to "${newName}".`);
+            }
+        };
+
+        const deleteClient = () => {
+            const clientToDelete = clientLedgers.activeClientName;
+            if (!clientToDelete || clientToDelete === DEFAULT_CLIENT_NAME) {
+                alert("Cannot delete the Default Client.");
+                return;
+            }
+            
+            if (!confirm(`WARNING: Are you sure you want to delete ALL data for client "${clientToDelete}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            delete clientLedgers.clients[clientToDelete];
+
+            const remainingClients = Object.keys(clientLedgers.clients).sort().filter(name => name !== DEFAULT_CLIENT_NAME);
+            
+            if (remainingClients.length > 0) {
+                setActiveClient(remainingClients[0]);
+            } else {
+                initializeDefaultClient();
+            }
+            alert(`Client "${clientToDelete}" and all associated data have been deleted.`);
+        };
+
+
+        const addTask = () => {
+            const hrInput = document.getElementById('task-hr-input');
+            const minInput = document.getElementById('task-min-input');
+            const secInput = document.getElementById('task-sec-input');
+            
+            const hours = parseFloat(hrInput.value) || 0;
+            const minutes = parseFloat(minInput.value) || 0;
+            const seconds = parseFloat(secInput.value) || 0;
+            const date = new Date().toISOString().split('T')[0]; 
+
+            if (hours === 0 && minutes === 0 && seconds === 0) {
+                alert("Please enter at least one value for Hours, Minutes, or Seconds.");
+                return;
+            }
+            
+            const totalDecimalHours = hours + (minutes / 60) + (seconds / 3600);
+            
+            const clientData = getOrCreateClientData(clientLedgers.activeClientName);
+            
+            if (!Array.isArray(clientData.tasks)) clientData.tasks = Object.values(clientData.tasks || {});
+            
+            clientData.tasks.push({
+                hours: hours,
+                minutes: minutes,
+                seconds: seconds,
+                decimalHours: totalDecimalHours,
+                date: date,
+                timestamp: Date.now()
+            });
+            
+            hrInput.value = '';
+            minInput.value = '';
+            secInput.value = '';
+
+            saveDataToCloud(); 
+        };
+
+        const addPayment = () => {
+            const amountInput = document.getElementById('payment-amount-input');
+
+            const amount = parseFloat(amountInput.value);
+            const date = new Date().toISOString().split('T')[0];
+
+            if (isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid deposit amount.");
+                return;
+            }
+
+            const clientData = getOrCreateClientData(clientLedgers.activeClientName);
+            
+            if (!Array.isArray(clientData.payments)) clientData.payments = Object.values(clientData.payments || {});
+
+            clientData.payments.push({
+                amount: amount,
+                date: date,
+                timestamp: Date.now()
+            });
+
+            amountInput.value = '';
+
+            saveDataToCloud(); 
+        };
+
+        const updateHourlyRate = () => {
+            const rateInput = document.getElementById('hourly-rate-input');
+            const newRate = parseFloat(rateInput.value);
+
+            if (isNaN(newRate) || newRate <= 0) {
+                alert("Please enter a valid Hourly Rate.");
+                return;
+            }
+            
+            const clientData = getOrCreateClientData(clientLedgers.activeClientName);
+            clientData.settings.hourlyRate = newRate;
+            
+            saveDataToCloud(); 
+        };
+        
+        const handleDelete = (type, timestampToDelete) => {
+            const clientData = getOrCreateClientData(clientLedgers.activeClientName);
+            
+            const listName = type === 'task' ? 'Task' : 'Payment';
+            
+            if (!confirm(`Are you sure you want to delete this ${listName} entry?`)) {
+                return;
+            }
+            
+            if (type === 'task') {
+                if (!Array.isArray(clientData.tasks)) clientData.tasks = Object.values(clientData.tasks || {});
+                clientData.tasks = clientData.tasks.filter(item => item.timestamp !== timestampToDelete);
+            } else {
+                if (!Array.isArray(clientData.payments)) clientData.payments = Object.values(clientData.payments || {});
+                clientData.payments = clientData.payments.filter(item => item.timestamp !== timestampToDelete);
+            }
+
+            saveDataToCloud(); 
+        };
+        
+        const calculateClientSummary = (clientData) => {
+            const tasksArray = Array.isArray(clientData.tasks) ? clientData.tasks : Object.values(clientData.tasks || {});
+            const paymentsArray = Array.isArray(clientData.payments) ? clientData.payments : Object.values(clientData.payments || {});
+
+            const totalHours = tasksArray.reduce((sum, task) => sum + task.decimalHours, 0);
+            const totalTaskValue = totalHours * clientData.settings.hourlyRate;
+            const totalDeposited = paymentsArray.reduce((sum, payment) => sum + payment.amount, 0);
+            const remainingBalance = totalTaskValue - totalDeposited;
+
+            return {
+                totalHours,
+                totalTaskValue,
+                totalDeposited,
+                remainingBalance
+            };
+        };
+
+        const renderClientSelector = () => {
+            const selector = document.getElementById('client-selector');
+            const searchInput = document.getElementById('client-search-input');
+            const filterText = searchInput.value.toLowerCase().trim();
+            
+            selector.innerHTML = '';
+            
+            const clientNames = Object.keys(clientLedgers.clients).sort();
+            
+            const filteredClients = clientNames.filter(name => name.toLowerCase().includes(filterText));
+
+            filteredClients.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                if (name === clientLedgers.activeClientName) {
+                    option.selected = true;
+                }
+                selector.appendChild(option);
+            });
+            
+            const renameBtn = document.getElementById('rename-client-btn');
+            const deleteBtn = document.getElementById('delete-client-btn');
+            
+            const isClientSelectedAndNotDefault = clientLedgers.activeClientName && clientLedgers.activeClientName !== DEFAULT_CLIENT_NAME;
+            
+            const isDisabled = !isClientSelectedAndNotDefault;
+
+            if (renameBtn) renameBtn.disabled = isDisabled;
+            if (deleteBtn) deleteBtn.disabled = isDisabled;
+
+            if (renameBtn) renameBtn.classList.toggle('client-action-disabled', isDisabled);
+            if (deleteBtn) deleteBtn.classList.toggle('client-action-disabled', isDisabled);
+
+            if (clientLedgers.activeClientName && selector.value !== clientLedgers.activeClientName) {
+                 selector.value = clientLedgers.activeClientName;
+            }
+        };
+
+        const renderSummary = (summary, hourlyRate) => {
+            const summaryEl = document.getElementById('summary-results');
+            
+            const isNegative = summary.remainingBalance < 0;
+            const balanceClass = isNegative 
+                ? 'text-danger bg-red-50 border-danger net-balance-highlight' 
+                : 'text-accent bg-green-50 border-accent net-balance-highlight';
+            const balanceLabel = isNegative ? 'Amount Due' : 'Client Credit';
+            const balanceTextColor = isNegative ? 'text-danger' : 'text-accent';
+
+            summaryEl.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                    <div class="p-4 bg-white rounded-lg corporate-card-pro border border-gray-100">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Hourly Rate</p>
+                        <p class="text-3xl font-extrabold text-primary-dark mt-1">${formatCurrency(hourlyRate)}</p>
+                    </div>
+                    
+                    <div class="p-4 bg-white rounded-lg corporate-card-pro border border-gray-100">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Hours Billed</p>
+                        <p class="text-3xl font-extrabold text-primary-dark mt-1">${decimalHoursToHMS(summary.totalHours)}</p>
+                    </div>
+
+                    <div class="p-4 bg-white rounded-lg corporate-card-pro border border-gray-100">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Billed Value</p>
+                        <p class="text-3xl font-extrabold text-gray-800 mt-1">${formatCurrency(summary.totalTaskValue)}</p>
+                    </div>
+
+                    <div class="p-4 rounded-lg corporate-card-pro border-2 ${balanceClass}">
+                        <p class="text-xs font-semibold ${balanceTextColor} uppercase tracking-wider">
+                            Net Balance
+                        </p>
+                        <p class="text-4xl font-extrabold ${balanceTextColor} mt-1">
+                            ${formatCurrency(Math.abs(summary.remainingBalance))} 
+                        </p>
+                        <p class="text-sm font-semibold ${balanceTextColor} mt-1">
+                            ${balanceLabel}
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-5 p-3 bg-white border border-gray-200 rounded-lg shadow-sm text-center">
+                    <p class="text-sm font-semibold text-gray-600">Total Deposit Received: <span class="text-xl font-bold text-accent">${formatCurrency(summary.totalDeposited)}</span></p>
+                </div>
+            `;
+        };
+
+        const renderTaskList = (tasks, hourlyRate, activeClientName) => {
+            const listEl = document.getElementById('task-list');
+            listEl.innerHTML = '';
+            
+            const taskArray = Array.isArray(tasks) ? tasks : Object.values(tasks || {});
+
+            const sortedTasks = [...taskArray].sort((a, b) => b.timestamp - a.timestamp);
+
+            if (sortedTasks.length === 0) {
+                listEl.innerHTML = '<p class="text-center text-gray-500 p-4">No Task entries found.</p>';
+                return;
+            }
+
+             sortedTasks.forEach((task, index) => {
+                const countingNumber = taskArray.length - index; 
+                const billedValue = task.decimalHours * hourlyRate;
+                const item = document.createElement('div');
+                item.className = 'list-item ledger-entry task-entry flex justify-between items-center p-4 bg-white border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition duration-100';
+                item.innerHTML = `
+                    <div class="flex-grow">
+                        <p class="text-base font-semibold text-gray-800 flex items-center">
+                            <span class="text-primary font-bold mr-3">${countingNumber}.</span>
+                            <span class="font-extrabold text-primary">${activeClientName}</span> 
+                            <span class="text-sm font-semibold text-gray-600 ml-4">
+                                Billed: 
+                                <span class="font-extrabold text-gray-800">${formatCurrency(billedValue)}</span>
+                            </span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1 ml-6">
+                            Time: ${task.hours}h ${task.minutes}m ${task.seconds}s • Date: ${formatDate(task.date)}
+                        </p>
+                    </div>
+                    <button onclick="handleDelete('task', ${task.timestamp})" class="text-danger hover:text-red-700 ml-4 p-1 rounded-full transition duration-150" aria-label="Delete Task">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                `;
+                listEl.appendChild(item);
+            });
+        };
+
+        const renderPaymentList = (payments, hourlyRate, activeClientName) => {
+            const listEl = document.getElementById('payment-list');
+            listEl.innerHTML = '';
+            
+            const paymentArray = Array.isArray(payments) ? payments : Object.values(payments || {});
+
+            const sortedPayments = [...paymentArray].sort((a, b) => b.timestamp - a.timestamp);
+
+            if (sortedPayments.length === 0) {
+                listEl.innerHTML = '<p class="text-center text-gray-500 p-4">No Payment entries found.</p>';
+                return;
+            }
+
+            sortedPayments.forEach((payment, index) => {
+                const countingNumber = paymentArray.length - index;
+                const item = document.createElement('div');
+                item.className = 'list-item ledger-entry payment-entry flex justify-between items-center p-4 bg-white border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition duration-100';
+                item.innerHTML = `
+                    <div class="flex-grow">
+                         <p class="text-base font-semibold text-gray-800 flex items-center">
+                            <span class="text-primary font-bold mr-3">${countingNumber}.</span>
+                            Amount Received: <span class="font-extrabold text-accent ml-2">${formatCurrency(payment.amount)}</span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1 ml-6">
+                            Date: ${formatDate(payment.date)}
+                        </p>
+                    </div>
+                    <button onclick="handleDelete('payment', ${payment.timestamp})" class="text-danger hover:text-red-700 ml-4 p-1 rounded-full transition duration-150" aria-label="Delete Payment">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                `;
+                listEl.appendChild(item);
+            });
+        };
+
+        const renderAllClientData = () => {
+            const contentHeader = document.getElementById('content-display-header');
+            const loadingState = document.getElementById('loading-state');
+            
+            const activeClientName = clientLedgers.activeClientName;
+            const clientData = activeClientName ? clientLedgers.clients[activeClientName] : null;
+
+            renderClientSelector();
+            
+            if (!currentUserId) {
+                 return; 
+            }
+            
+            if (!activeClientName || !clientData) {
+                 contentHeader.style.display = 'none';
+                 loadingState.style.display = 'block';
+                 loadingState.innerHTML = `<h2 class="text-2xl font-bold text-primary mb-3">Welcome!</h2><p class="text-gray-600">Click '+ Add New Client' above to create your first ledger.</p>`;
+                 return;
+            }
+            
+            contentHeader.style.display = 'block';
+            loadingState.style.display = 'none';
+            
+            const inputsEnabled = !!activeClientName;
+            document.querySelectorAll('.client-dependent-input').forEach(el => el.disabled = !inputsEnabled);
+            document.querySelectorAll('.client-dependent-btn').forEach(el => el.disabled = !inputsEnabled);
+
+            const summary = calculateClientSummary(clientData);
+            const hourlyRate = clientData.settings.hourlyRate;
+            
+            const activeDisplayEl = document.getElementById('active-client-display');
+            if(activeDisplayEl) {
+                 activeDisplayEl.textContent = activeClientName;
+            }
+            
+            const rateInput = document.getElementById('hourly-rate-input');
+            if(rateInput) {
+                 rateInput.value = hourlyRate;
+            }
+           
+            renderSummary(summary, hourlyRate);
+            renderTaskList(clientData.tasks, hourlyRate, activeClientName);
+            renderPaymentList(clientData.payments, hourlyRate, activeClientName);
+        };
+
+        window.onload = () => {
+            const clientSelector = document.getElementById('client-selector');
+            const searchInput = document.getElementById('client-search-input');
+            
+            if(clientSelector) {
+                clientSelector.addEventListener('change', handleClientSelectionChange);
+            }
+            if(searchInput) {
+                 searchInput.addEventListener('input', renderClientSelector);
+            }
+        };
+
+    </script>
+</body>
+</html>
