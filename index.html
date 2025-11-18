@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="theme-color" id="meta-theme-color" content="#ffffff">
+    
+    <title>Jar Glass Ledger</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#2563EB', // Windows 11 Blue
+                        'primary-dark': '#1D4ED8',
+                        danger: '#EF4444',
+                        success: '#10B981',
+                        accent: '#059669',
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* --- GLASSMORPHISM ENGINE --- */
+        
+        /* 1. Background Gradients (Windows 11 Style) */
+        body {
+            transition: background 0.5s ease;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        /* Light Mode Background: Soft Blue/White Bloom */
+        body.light-bg {
+            background: radial-gradient(circle at 0% 0%, #eff6ff 0%, #dbeafe 50%, #eff6ff 100%); 
+            color: #1e293b;
+        }
+
+        /* Dark Mode Background: Deep Space/Midnight */
+        body.dark-bg {
+            background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+            color: #f8fafc;
+        }
+
+        /* 2. The Glass Card Class */
+        .glass-panel {
+            /* Base Transparency */
+            background: rgba(255, 255, 255, 0.7);
+            /* The Blur (Frosted Effect) */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            /* Subtle Border */
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        /* Dark Mode Glass Override */
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.6); /* Darker, semi-transparent */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            color: #e2e8f0;
+        }
+
+        /* 3. Inputs & Selects (Glassy) */
+        .glass-input {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(4px);
+        }
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #2563EB;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+        .dark .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .dark .glass-input:focus {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: #60A5FA;
+        }
+        .dark .glass-input::placeholder { color: #94a3b8; }
+
+        /* 4. Buttons */
+        .glass-btn-primary {
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+        .glass-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        /* 5. Utilities */
+        .text-shadow { text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .history-list { max-height: 400px; overflow-y: auto; }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 0.8); }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.4s ease-out forwards; }
+
+    </style>
+</head>
+
+<body class="light-bg antialiased transition-colors duration-300">
+
+<header id="main-header" class="fixed top-0 left-0 right-0 z-40 glass-panel rounded-none border-b border-white/20 dark:border-white/5">
+    <div class="max-w-6xl mx-auto flex justify-between items-center p-4 md:p-5">
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight uppercase bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-blue-500 dark:from-blue-400 dark:to-purple-400 drop-shadow-sm">
+            Jar Ledger
+        </h1>
+        
+        <div id="user-action-container" class="relative z-50">
+            <button id="user-action-button" class="w-12 h-12 rounded-full glass-panel flex items-center justify-center hover:scale-105 transition active:scale-95 shadow-lg">
+                <svg id="user-action-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"></svg>
+            </button>
+            
+            <div id="profile-dropdown" style="display: none;" class="absolute top-14 right-0 w-72 glass-panel rounded-2xl overflow-hidden animate-in origin-top-right">
+                <div class="p-4 border-b border-gray-200/50 dark:border-white/10">
+                    <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Signed in as</p>
+                    <p id="user-email-display" class="text-sm font-semibold truncate text-gray-800 dark:text-white mt-1">user@example.com</p>
+                </div>
+                
+                <div class="p-3 border-b border-gray-200/50 dark:border-white/10">
+                    <p class="text-xs font-bold text-gray-400 px-2 mb-2">Appearance</p>
+                    <button id="theme-toggle-btn" class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition group">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300" id="theme-icon-container">
+                                </div>
+                            <div class="text-left">
+                                <span class="block text-sm font-bold text-gray-800 dark:text-white" id="theme-toggle-text">System</span>
+                                <span class="block text-xs text-gray-500 dark:text-gray-400">Click to switch</span>
+                            </div>
+                        </div>
+                        <div class="w-2 h-2 rounded-full bg-green-500" id="theme-indicator"></div>
+                    </button>
+                </div>
+
+                <button id="dropdown-logout-btn" class="w-full text-left px-6 py-4 text-sm text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H3" /></svg>
+                    Log Out
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div id="auth-modal-backdrop" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div id="auth-container" class="w-full max-w-md p-8 glass-panel rounded-3xl space-y-6 animate-in" onclick="event.stopPropagation();">
+        <div class="flex justify-between items-center">
+            <h2 id="auth-title" class="text-2xl font-bold text-gray-900 dark:text-white">Login</h2>
+            <button onclick="hideAuthModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">✕</button>
+        </div>
+        
+        <button onclick="signInWithGoogle()" class="w-full bg-white dark:bg-white/10 text-gray-800 dark:text-white font-semibold py-3 rounded-xl shadow-sm border border-gray-200 dark:border-white/20 flex items-center justify-center gap-3 hover:bg-gray-50 dark:hover:bg-white/20 transition">
+            <svg class="w-5 h-5" viewBox="0 0 18 18"><path d="M17.64 9.2045c0-.6381-.0573-1.2518-.1698-1.8409H9v3.4818h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.26h2.9082c1.7018-1.5668 2.68-3.8732 2.68-6.6191z" fill="#4285F4"/><path d="M9 18c2.43 0 4.47-.8032 5.96-2.1764L12.0518 13.56c-.8032.5409-1.8395.8618-3.0518.8618-2.3441 0-4.3282-1.5818-5.0359-3.7109H.9v2.33C2.3909 15.9832 5.4282 18 9 18z" fill="#34A853"/><path d="M3.9641 10.71c-.1818-.5409-.2836-1.1164-.2836-1.71s.1018-1.1691.2836-1.71V4.95H.9C.3273 6.1364 0 7.5232 0 9s.3273 2.8636.9 4.05l3.0641-2.33z" fill="#FBBC05"/><path d="M9 3.5782c1.3236 0 2.5082.4555 3.4409 1.3536l2.5809-2.5809C13.46.8559 11.4236 0 9 0 5.4282 0 2.3909 2.0168.9 5.04L3.9641 7.37c.7077-2.1291 2.6918-3.7918 5.0359-3.7918z" fill="#EA4335"/></svg>
+            Continue with Google
+        </button>
+
+        <div class="flex items-center gap-3 text-sm text-gray-400">
+            <hr class="flex-grow border-gray-300 dark:border-gray-600"><span>OR</span><hr class="flex-grow border-gray-300 dark:border-gray-600">
+        </div>
+
+        <div class="space-y-3">
+            <input type="email" id="auth-email" placeholder="Email Address" class="w-full p-3 rounded-xl glass-input transition">
+            <input type="password" id="auth-password" placeholder="Password" class="w-full p-3 rounded-xl glass-input transition">
+        </div>
+
+        <button id="auth-submit-btn" class="w-full glass-btn-primary font-bold py-3.5 rounded-xl shadow-lg transition">Log In</button>
+
+        <p class="text-center text-sm text-gray-600 dark:text-gray-300">
+            <span id="auth-toggle-text">Need an account?</span>
+            <button id="auth-toggle-link" class="font-bold text-blue-600 dark:text-blue-400 hover:underline ml-1">Sign Up</button>
+        </p>
+    </div>
+</div>
+
+<div id="app" class="max-w-6xl mx-auto space-y-8 p-4 md:p-6 pb-20 pt-28">
+
+    <div id="app-content-area" style="display: block;">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div id="select-client-card" class="glass-panel p-6 rounded-3xl">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2 opacity-80">
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    Find Client
+                </h2>
+                <div class="relative mb-4">
+                    <input type="text" id="client-search-input" placeholder="Search clients..." class="glass-input w-full rounded-xl p-3 pl-10 transition">
+                    <svg class="absolute left-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <select id="client-selector" class="glass-input w-full rounded-xl p-3 font-semibold cursor-pointer">
+                    </select>
+            </div>
+
+            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div id="new-client-card" class="glass-panel p-6 rounded-3xl flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold mb-2 text-blue-600 dark:text-blue-400">Create New Ledger</h2>
+                        <p class="text-sm opacity-70 mb-4">Start tracking expenses for a new client immediately.</p>
+                    </div>
+                    <button id="add-new-client-btn" class="w-full glass-btn-primary py-3 rounded-xl font-bold shadow-md">+ Add Client</button>
+                </div>
+
+                <div id="client-actions-card" class="glass-panel p-6 rounded-3xl flex flex-col justify-center gap-3">
+                    <button onclick="renameClient()" id="rename-client-btn" class="w-full bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 text-gray-800 dark:text-white font-semibold py-3 rounded-xl transition border border-transparent hover:border-gray-300 dark:hover:border-white/30">
+                        Rename Active Client
+                    </button>
+                    <button onclick="deleteClient()" id="delete-client-btn" class="w-full bg-red-100/50 dark:bg-red-900/30 hover:bg-red-200/50 dark:hover:bg-red-900/50 text-red-600 dark:text-red-300 font-semibold py-3 rounded-xl transition border border-transparent hover:border-red-300">
+                        Delete Active Client
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-area-main-structure">
+            <div id="content-display-header" class="mt-8 mb-6 flex items-center gap-3">
+                <div class="h-10 w-1 bg-blue-500 rounded-full"></div>
+                <div>
+                    <p class="text-xs font-bold opacity-60 uppercase tracking-wider">Active Dashboard</p>
+                    <h2 class="text-3xl font-extrabold tracking-tight"><span id="active-client-display" class="text-blue-600 dark:text-blue-400"></span></h2>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-3xl mb-8">
+                <h3 class="text-lg font-bold mb-6 border-b border-gray-200/50 dark:border-white/10 pb-2 opacity-80">Financial Overview</h3>
+                <div id="summary-results"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="glass-panel p-6 rounded-3xl">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Log Time
+                    </h3>
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div class="text-center">
+                            <input type="number" id="task-hr-input" placeholder="00" class="glass-input w-full text-center text-2xl font-mono font-bold rounded-xl p-3" min="0">
+                            <label class="text-xs font-bold opacity-60 mt-1 block">HRS</label>
+                        </div>
+                        <div class="text-center">
+                            <input type="number" id="task-min-input" placeholder="00" class="glass-input w-full text-center text-2xl font-mono font-bold rounded-xl p-3" min="0" max="59">
+                            <label class="text-xs font-bold opacity-60 mt-1 block">MIN</label>
+                        </div>
+                        <div class="text-center">
+                            <input type="number" id="task-sec-input" placeholder="00" class="glass-input w-full text-center text-2xl font-mono font-bold rounded-xl p-3" min="0" max="59">
+                            <label class="text-xs font-bold opacity-60 mt-1 block">SEC</label>
+                        </div>
+                    </div>
+                    <button onclick="addTask()" class="w-full glass-btn-primary py-4 rounded-xl font-bold shadow-lg tracking-wide">ADD TIME ENTRY</button>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-green-600 dark:text-green-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                        Record Payment
+                    </h3>
+                    <div class="mb-4">
+                        <div class="relative">
+                            <span class="absolute left-4 top-4 text-xl font-bold opacity-60">₹</span>
+                            <input type="number" id="payment-amount-input" placeholder="0.00" class="glass-input w-full pl-10 text-2xl font-bold rounded-xl p-3 text-green-600 dark:text-green-400" min="0">
+                        </div>
+                        <label class="text-xs font-bold opacity-60 mt-2 block ml-1">DEPOSIT AMOUNT</label>
+                    </div>
+                    <button onclick="addPayment()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border border-white/20 py-4 rounded-xl font-bold shadow-lg tracking-wide transition transform active:scale-95">ADD DEPOSIT</button>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-3xl mb-8 flex flex-col md:flex-row items-center gap-4">
+                <div class="flex-grow w-full">
+                    <label class="text-xs font-bold opacity-60 uppercase mb-1 block">Hourly Rate Configuration</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-3.5 text-gray-500">₹</span>
+                        <input type="number" id="hourly-rate-input" class="glass-input w-full pl-8 p-3 rounded-xl font-bold">
+                    </div>
+                </div>
+                <button onclick="updateHourlyRate()" class="w-full md:w-auto px-8 py-3 bg-gray-800 dark:bg-white dark:text-gray-900 text-white font-bold rounded-xl hover:opacity-90 transition shadow-md">Update Rate</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4 opacity-80">Task History</h3>
+                    <div id="task-list" class="history-list glass-panel rounded-3xl p-2"></div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4 opacity-80">Transactions</h3>
+                    <div id="payment-list" class="history-list glass-panel rounded-3xl p-2"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="welcome-message" class="text-center p-12 glass-panel rounded-3xl mt-8 animate-in" style="display:none;"></div>
+    </div>
+</div>
+
+<button id="scroll-to-top" class="fixed bottom-6 right-6 w-14 h-14 rounded-full glass-btn-primary flex items-center justify-center shadow-2xl z-30 hidden hover:scale-110 transition">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+</button>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+<script>
+    // --- 1. ADVANCED THEME ENGINE (Windows 11 Logic) ---
+    const metaThemeColor = document.getElementById('meta-theme-color');
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const themeText = document.getElementById('theme-toggle-text');
+    const themeIconContainer = document.getElementById('theme-icon-container');
+    const themeIndicator = document.getElementById('theme-indicator');
+
+    // Define Themes
+    const modes = ['light', 'dark', 'system'];
+    const themeConfig = {
+        light: {
+            label: 'Light Mode',
+            color: '#eff6ff', // Matches Light Gradient Top
+            icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>'
+        },
+        dark: {
+            label: 'Dark Mode',
+            color: '#1e1b4b', // Matches Dark Gradient Top
+            icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>'
+        },
+        system: {
+            label: 'System Default',
+            color: 'auto',
+            icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>'
+        }
+    };
+
+    // Initialize Theme
+    function initTheme() {
+        const savedMode = localStorage.getItem('glass-theme') || 'system';
+        applyTheme(savedMode);
+    }
+
+    // Apply Theme Logic
+    function applyTheme(mode) {
+        // 1. Update UI Text & Icon
+        themeText.textContent = themeConfig[mode].label;
+        themeIconContainer.innerHTML = themeConfig[mode].icon;
+        localStorage.setItem('glass-theme', mode);
+
+        // 2. Logic for Class & Meta Color
+        if (mode === 'system') {
+            handleSystemTheme();
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', handleSystemTheme);
+            themeIndicator.className = "w-2 h-2 rounded-full bg-gray-400"; // Gray for auto
+        } else {
+            window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', handleSystemTheme);
+            forceTheme(mode);
+            themeIndicator.className = "w-2 h-2 rounded-full bg-green-500"; // Green for manual
+        }
+    }
+
+    function forceTheme(mode) {
+        if (mode === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.body.classList.remove('light-bg');
+            document.body.classList.add('dark-bg');
+            metaThemeColor.setAttribute('content', themeConfig.dark.color);
+        } else {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark-bg');
+            document.body.classList.add('light-bg');
+            metaThemeColor.setAttribute('content', themeConfig.light.color);
+        }
+    }
+
+    function handleSystemTheme() {
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        forceTheme(isDark ? 'dark' : 'light');
+    }
+
+    // Toggle Click Handler
+    themeToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent dropdown close
+        const currentMode = localStorage.getItem('glass-theme') || 'system';
+        const nextIndex = (modes.indexOf(currentMode) + 1) % modes.length;
+        applyTheme(modes[nextIndex]);
+    });
+
+    // --- CONFIGURATION & FIREBASE ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCG9w-pUJq9FopmIUUPLUVMc03P84Rblgw",
+      authDomain: "jar-ledger.firebaseapp.com",
+      databaseURL: "https://jar-ledger-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "jar-ledger",
+      storageBucket: "jar-ledger.firebasestorage.app",
+      messagingSenderId: "915159281904",
+      appId: "1:915159281904:web:4f3d5c940a03c4b525d235",
+      measurementId: "G-YB740FJBBG"
+    };
+
+    let database, auth, clientLedgersRef;
+    let currentUserId = null;
+    let isLoginMode = true;
+    const DEFAULT_CLIENT_NAME = 'Default Client';
+    let localDefaultClientData = JSON.parse(localStorage.getItem('jarLocalDefaultClient')) || { tasks: [], payments: [], settings: { hourlyRate: 150 } };
+    let tempGuestData = { activeClientName: DEFAULT_CLIENT_NAME, clients: { [DEFAULT_CLIENT_NAME]: { tasks: [], payments: [], settings: { hourlyRate: 150 } } } };
+    let clientLedgers = { ...tempGuestData };
+
+    // Login/User Icons
+    const loginIconPath = '<path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />';
+    const userIconPath = '<path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />';
+
+    // Init Firebase
+    try {
+         firebase.initializeApp(firebaseConfig);
+         database = firebase.database();
+         auth = firebase.auth();
+    } catch (e) {
+         console.error("Firebase Init Error", e);
+    }
+
+    // --- AUTH FUNCTIONS ---
+    const showAuthModal = () => { isLoginMode = true; updateAuthUI(); document.getElementById('auth-modal-backdrop').style.display = 'flex'; };
+    const hideAuthModal = () => { document.getElementById('auth-modal-backdrop').style.display = 'none'; };
+    const toggleProfileDropdown = () => {
+        const dd = document.getElementById('profile-dropdown');
+        dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+    };
+
+    const updateAuthUI = () => {
+        const title = document.getElementById('auth-title');
+        const btn = document.getElementById('auth-submit-btn');
+        const linkText = document.getElementById('auth-toggle-text');
+        const link = document.getElementById('auth-toggle-link');
+        
+        if (isLoginMode) {
+            title.textContent = 'Login'; btn.textContent = 'Log In';
+            linkText.textContent = 'Need an account?'; link.textContent = 'Sign Up';
+        } else {
+            title.textContent = 'Create Account'; btn.textContent = 'Sign Up';
+            linkText.textContent = 'Already have an account?'; link.textContent = 'Log In';
+        }
+    };
+
+    const submitAuthForm = () => {
+        const email = document.getElementById('auth-email').value;
+        const pass = document.getElementById('auth-password').value;
+        if (!email || !pass) return alert("Please enter email & password");
+        
+        if (isLoginMode) auth.signInWithEmailAndPassword(email, pass).catch(e => alert(e.message));
+        else auth.createUserWithEmailAndPassword(email, pass).then(() => alert("Success! Login now.")).catch(e => alert(e.message));
+    };
+
+    const signInWithGoogle = () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const isApp = (typeof window.AndroidApp !== 'undefined') || /Android.*wv/.test(navigator.userAgent);
+        if (isApp) auth.signInWithRedirect(provider);
+        else auth.signInWithPopup(provider).catch(e => alert(e.message));
+    };
+
+    const logout = () => {
+        toggleProfileDropdown();
+        if (window.AndroidApp && window.AndroidApp.clearAppCookies) window.AndroidApp.clearAppCookies();
+        auth.signOut().then(() => location.reload());
+    };
+
+    // --- APP STATE ---
+    auth.onAuthStateChanged(user => {
+        const appContent = document.getElementById('app-content-area');
+        const authModal = document.getElementById('auth-modal-backdrop');
+        const userBtn = document.getElementById('user-action-button');
+        const userIcon = document.getElementById('user-action-icon');
+        const userEmail = document.getElementById('user-email-display');
+
+        if (user) {
+            currentUserId = user.uid;
+            appContent.style.display = 'block';
+            authModal.style.display = 'none';
+            userIcon.innerHTML = userIconPath;
+            userBtn.onclick = toggleProfileDropdown;
+            userEmail.textContent = user.email;
+            clientLedgersRef = database.ref(`users/${currentUserId}/clientLedgers`);
+            startRealtimeListener();
+        } else {
+            currentUserId = null;
+            clientLedgersRef = null;
+            userIcon.innerHTML = loginIconPath;
+            userBtn.onclick = showAuthModal;
+            clientLedgers = { ...tempGuestData };
+            renderAllClientData();
+        }
+    });
+
+    // --- DATA LOGIC ---
+    const saveLocalData = () => {
+        if (!currentUserId && clientLedgers.clients[DEFAULT_CLIENT_NAME]) {
+            localStorage.setItem('jarLocalDefaultClient', JSON.stringify(clientLedgers.clients[DEFAULT_CLIENT_NAME]));
+        }
+    };
+
+    const saveDataToCloud = () => {
+        if (!clientLedgersRef || !currentUserId) return;
+        const data = JSON.parse(JSON.stringify(clientLedgers));
+        delete data.clients[DEFAULT_CLIENT_NAME];
+        clientLedgersRef.set(data);
+    };
+
+    const startRealtimeListener = () => {
+        const welcome = document.getElementById('welcome-message');
+        const header = document.getElementById('content-display-header');
+        header.style.display = 'none'; welcome.style.display = 'block';
+        welcome.innerHTML = `<h2 class="text-xl font-bold animate-pulse">Syncing with Cloud...</h2>`;
+
+        clientLedgersRef.on('value', (snap) => {
+            const data = snap.val();
+            if (data && data.clients) {
+                if (data.clients[DEFAULT_CLIENT_NAME]) {
+                    database.ref(`users/${currentUserId}/clientLedgers/clients/${DEFAULT_CLIENT_NAME}`).remove();
+                    delete data.clients[DEFAULT_CLIENT_NAME];
+                }
+                clientLedgers.clients = data.clients;
+                clientLedgers.activeClientName = data.activeClientName;
+            } else {
+                clientLedgers = { activeClientName: null, clients: {} };
+            }
+            clientLedgers.clients[DEFAULT_CLIENT_NAME] = localDefaultClientData;
+            
+            // Init Default logic
+            if (!clientLedgers.activeClientName || !clientLedgers.clients[clientLedgers.activeClientName]) {
+                 const first = Object.keys(clientLedgers.clients).filter(n => n !== DEFAULT_CLIENT_NAME).sort()[0];
+                 clientLedgers.activeClientName = first || DEFAULT_CLIENT_NAME;
+            }
+            renderAllClientData();
+        });
+    };
+
+    const getOrCreateClient = (name) => {
+        if (!clientLedgers.clients[name]) clientLedgers.clients[name] = { tasks: [], payments: [], settings: { hourlyRate: 150 } };
+        if (name === DEFAULT_CLIENT_NAME) saveLocalData();
+        return clientLedgers.clients[name];
+    };
+
+    // Operations
+    const addNewClient = () => {
+        let name = prompt("Client Name:");
+        if (name && name.trim()) {
+            name = name.trim();
+            if (clientLedgers.clients[name]) return alert("Exists");
+            getOrCreateClient(name);
+            clientLedgers.activeClientName = name;
+            saveLocalData(); saveDataToCloud(); renderAllClientData();
+        }
+    };
+
+    const addTask = () => {
+        const hr = parseFloat(document.getElementById('task-hr-input').value) || 0;
+        const min = parseFloat(document.getElementById('task-min-input').value) || 0;
+        const sec = parseFloat(document.getElementById('task-sec-input').value) || 0;
+        if (hr === 0 && min === 0 && sec === 0) return;
+
+        const client = getOrCreateClient(clientLedgers.activeClientName);
+        if (!client.tasks) client.tasks = [];
+        client.tasks.push({
+            hours: hr, minutes: min, seconds: sec,
+            decimalHours: hr + (min/60) + (sec/3600),
+            date: new Date().toISOString().split('T')[0],
+            timestamp: Date.now()
+        });
+
+        document.getElementById('task-hr-input').value = '';
+        document.getElementById('task-min-input').value = '';
+        document.getElementById('task-sec-input').value = '';
+        saveLocalData(); saveDataToCloud(); renderAllClientData();
+    };
+
+    const addPayment = () => {
+        const amt = parseFloat(document.getElementById('payment-amount-input').value);
+        if (isNaN(amt) || amt <= 0) return;
+        const client = getOrCreateClient(clientLedgers.activeClientName);
+        if (!client.payments) client.payments = [];
+        client.payments.push({ amount: amt, date: new Date().toISOString().split('T')[0], timestamp: Date.now() });
+        document.getElementById('payment-amount-input').value = '';
+        saveLocalData(); saveDataToCloud(); renderAllClientData();
+    };
+    
+    const updateHourlyRate = () => {
+        const rate = parseFloat(document.getElementById('hourly-rate-input').value);
+        if(rate > 0) {
+            const client = getOrCreateClient(clientLedgers.activeClientName);
+            client.settings.hourlyRate = rate;
+            saveLocalData(); saveDataToCloud(); renderAllClientData();
+        }
+    };
+    
+    const renameClient = () => {
+        const old = clientLedgers.activeClientName;
+        if (!old || old === DEFAULT_CLIENT_NAME) return;
+        let name = prompt("Rename to:");
+        if(name && name.trim() && !clientLedgers.clients[name.trim()]) {
+            clientLedgers.clients[name.trim()] = clientLedgers.clients[old];
+            delete clientLedgers.clients[old];
+            clientLedgers.activeClientName = name.trim();
+            saveLocalData(); saveDataToCloud(); renderAllClientData();
+        }
+    };
+    
+    const deleteClient = () => {
+        const name = clientLedgers.activeClientName;
+        if(!name || name === DEFAULT_CLIENT_NAME) return;
+        if(confirm("Delete?")) {
+            delete clientLedgers.clients[name];
+            clientLedgers.activeClientName = DEFAULT_CLIENT_NAME; // fallback
+            saveLocalData(); saveDataToCloud(); renderAllClientData();
+        }
+    };
+
+    // --- RENDERING ---
+    const formatCurrency = (amt) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amt);
+    
+    const renderAllClientData = () => {
+        const activeName = clientLedgers.activeClientName;
+        const clientData = activeName ? clientLedgers.clients[activeName] : null;
+        const welcome = document.getElementById('welcome-message');
+        const mainStruct = document.getElementById('content-area-main-structure');
+        const selector = document.getElementById('client-selector');
+
+        // 1. Populate Dropdown
+        selector.innerHTML = '';
+        const names = Object.keys(clientLedgers.clients).sort();
+        names.forEach(n => {
+            const opt = document.createElement('option');
+            opt.value = n; opt.textContent = n;
+            if(n === activeName) opt.selected = true;
+            selector.appendChild(opt);
+        });
+        
+        // 2. Visibility Logic
+        if(!activeName || (currentUserId && activeName === DEFAULT_CLIENT_NAME)) {
+            mainStruct.style.display = 'none'; welcome.style.display = 'block';
+            welcome.innerHTML = `<h2 class="text-2xl font-bold mb-2">Local Default Client</h2><p>Select a cloud client to manage data.</p>`;
+            // If guest, actually show data for default
+            if(!currentUserId && activeName === DEFAULT_CLIENT_NAME) {
+                 mainStruct.style.display = 'block'; welcome.style.display = 'none';
+                 renderDashboard(clientData, activeName);
+            }
+        } else {
+            mainStruct.style.display = 'block'; welcome.style.display = 'none';
+            renderDashboard(clientData, activeName);
+        }
+        
+        // Disable actions for Default
+        const isDefault = activeName === DEFAULT_CLIENT_NAME;
+        document.getElementById('rename-client-btn').disabled = isDefault;
+        document.getElementById('delete-client-btn').disabled = isDefault;
+        document.getElementById('rename-client-btn').style.opacity = isDefault ? '0.5' : '1';
+        document.getElementById('delete-client-btn').style.opacity = isDefault ? '0.5' : '1';
+    };
+
+    const renderDashboard = (data, name) => {
+        document.getElementById('active-client-display').textContent = name;
+        document.getElementById('hourly-rate-input').value = data.settings.hourlyRate;
+
+        // Calcs
+        const tasks = Object.values(data.tasks || {});
+        const payments = Object.values(data.payments || {});
+        const totalHr = tasks.reduce((s, t) => s + t.decimalHours, 0);
+        const totalBill = totalHr * data.settings.hourlyRate;
+        const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
+        const bal = totalBill - totalPaid;
+
+        // Render Summary
+        const summaryEl = document.getElementById('summary-results');
+        const balColor = bal < 0 ? 'text-red-500' : 'text-green-500';
+        
+        summaryEl.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="glass-panel p-4 rounded-2xl bg-white/30 dark:bg-black/20">
+                    <p class="text-xs font-bold opacity-60 uppercase">Total Time</p>
+                    <p class="text-xl font-bold mt-1">${totalHr.toFixed(2)} Hrs</p>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl bg-white/30 dark:bg-black/20">
+                    <p class="text-xs font-bold opacity-60 uppercase">Billed Value</p>
+                    <p class="text-xl font-bold mt-1 text-blue-600 dark:text-blue-400">${formatCurrency(totalBill)}</p>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl bg-white/30 dark:bg-black/20">
+                    <p class="text-xs font-bold opacity-60 uppercase">Received</p>
+                    <p class="text-xl font-bold mt-1 text-green-600 dark:text-green-400">${formatCurrency(totalPaid)}</p>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl bg-white/30 dark:bg-black/20 border-2 ${bal < 0 ? 'border-red-400/50' : 'border-green-400/50'}">
+                    <p class="text-xs font-bold opacity-60 uppercase">Net Balance</p>
+                    <p class="text-2xl font-extrabold mt-1 ${balColor}">${formatCurrency(Math.abs(bal))}</p>
+                    <p class="text-xs font-bold opacity-70">${bal < 0 ? 'Overpaid' : 'Due'}</p>
+                </div>
+            </div>
+        `;
+
+        // Render Lists
+        const renderList = (items, elId, isTask) => {
+            const el = document.getElementById(elId); el.innerHTML = '';
+            items.sort((a,b) => b.timestamp - a.timestamp).forEach(item => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center p-3 mb-2 rounded-xl bg-white/40 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 transition border-b border-white/10";
+                if(isTask) {
+                     div.innerHTML = `<div><p class="font-bold text-sm">${item.hours}h ${item.minutes}m</p><p class="text-xs opacity-60">${item.date}</p></div> <div class="font-mono text-blue-600 dark:text-blue-400 font-bold">${formatCurrency(item.decimalHours * data.settings.hourlyRate)}</div>`;
+                } else {
+                     div.innerHTML = `<div><p class="font-bold text-sm text-green-600 dark:text-green-400">Deposit</p><p class="text-xs opacity-60">${item.date}</p></div> <div class="font-mono text-green-600 dark:text-green-400 font-bold">${formatCurrency(item.amount)}</div>`;
+                }
+                // Delete logic skipped for brevity in list view, can add if needed
+                el.appendChild(div);
+            });
+        };
+        renderList(tasks, 'task-list', true);
+        renderList(payments, 'payment-list', false);
+    };
+
+    // Event Listeners
+    document.getElementById('auth-submit-btn').addEventListener('click', submitAuthForm);
+    document.getElementById('auth-toggle-link').addEventListener('click', () => { isLoginMode = !isLoginMode; updateAuthUI(); });
+    document.getElementById('auth-modal-backdrop').addEventListener('click', hideAuthModal);
+    document.getElementById('dropdown-logout-btn').addEventListener('click', logout);
+    document.getElementById('add-new-client-btn').addEventListener('click', addNewClient);
+    document.getElementById('client-selector').addEventListener('change', (e) => { clientLedgers.activeClientName = e.target.value; saveDataToCloud(); renderAllClientData(); });
+    document.getElementById('client-search-input').addEventListener('input', renderAllClientData); // Basic re-render triggers select rebuild
+    window.onclick = (e) => {
+        if (!document.getElementById('user-action-container').contains(e.target)) document.getElementById('profile-dropdown').style.display = 'none';
+    };
+
+    // Init
+    initTheme();
+
+</script>
+</body>
+</html>
