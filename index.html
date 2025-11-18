@@ -7,117 +7,138 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="My Ledger">
+    <meta name="apple-mobile-web-app-title" content="Glass Ledger">
     
-    <meta name="theme-color" id="theme-meta" content="#F8FAFC">
+    <meta name="theme-color" id="theme-meta" content="#0f0c29">
 
-    <title>My Ledger App</title>
+    <title>Glass Ledger</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* --- 1. THEME VARIABLES (Slate Palette) --- */
+        /* --- 1. THEME VARIABLES (Glass Engine) --- */
         :root {
-            /* Light Mode */
-            --bg-body: #F8FAFC;
-            --bg-card: #FFFFFF;
-            --text-primary: #1E293B;
-            --text-secondary: #64748B;
-            --accent: #2563EB;
-            --border: #E2E8F0;
-            --btn-bg: #FFFFFF;
-            --btn-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --install-banner-bg: #2563EB;
-            --install-text: #FFFFFF;
+            /* LIGHT MODE GLASS */
+            --bg-gradient: linear-gradient(135deg, #E3F2FD 0%, #E8EAED 100%); 
+            /* Or try this for color: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); */
+            
+            --glass-bg: rgba(255, 255, 255, 0.65); /* Milky Glass */
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.3);
+            
+            --btn-bg: rgba(255, 255, 255, 0.8);
+            --status-bar: #E3F2FD;
         }
 
-        /* Dark Mode */
+        /* DARK MODE GLASS (The Pro Look) */
         [data-theme="dark"] {
-            --bg-body: #0F172A;       /* Slate 900 */
-            --bg-card: #1E293B;       /* Slate 800 */
-            --text-primary: #F1F5F9;
-            --text-secondary: #94A3B8;
-            --accent: #60A5FA;
-            --border: #334155;
-            --btn-bg: #1E293B;
-            --btn-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            --install-banner-bg: #60A5FA;
-            --install-text: #0F172A;
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            
+            --glass-bg: rgba(20, 20, 30, 0.6); /* Smoked Glass */
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            
+            --text-primary: #ffffff;
+            --text-secondary: #a5b4fc;
+            --accent: #60a5fa;
+            --accent-glow: rgba(96, 165, 250, 0.4);
+            
+            --btn-bg: rgba(255, 255, 255, 0.1);
+            --status-bar: #0f0c29;
         }
 
         /* --- 2. GLOBAL STYLES --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; transition: all 0.4s ease; }
         
         body {
-            background-color: var(--bg-body);
+            background: var(--bg-gradient);
+            background-attachment: fixed; /* Keeps gradient fixed while scrolling */
             color: var(--text-primary);
             min-height: 100vh;
             padding: 24px;
-            padding-top: 80px;
+            padding-top: 90px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        /* --- UI COMPONENTS --- */
+        /* --- GLASS COMPONENTS --- */
         .container { width: 100%; max-width: 480px; }
         
-        .header-text { margin-bottom: 20px; }
-        .header-text h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px; }
-        .header-text p { color: var(--text-secondary); font-size: 1rem; }
+        .header-text { margin-bottom: 25px; text-align: left; width: 100%; }
+        .header-text h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 5px; 
+            background: linear-gradient(to right, var(--text-primary), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; /* Gradient Text */
+        }
+        .header-text p { color: var(--text-secondary); font-size: 1rem; font-weight: 500; }
 
-        .card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 24px;
+        /* THE GLASS CARD */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);       /* The Frost Effect */
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 28px;
             margin-top: 20px;
-            box-shadow: var(--btn-shadow);
+            box-shadow: var(--glass-shadow);
         }
 
-        .card-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-secondary); font-weight: 600; margin-bottom: 8px; }
-        .balance { font-size: 2.8rem; font-weight: 700; color: var(--text-primary); margin-bottom: 15px; }
+        .card-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); font-weight: 700; margin-bottom: 10px; opacity: 0.8; }
+        .balance { font-size: 3rem; font-weight: 800; color: var(--text-primary); margin-bottom: 20px; text-shadow: 0 2px 10px var(--accent-glow); }
         
-        .info-row { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
-        .status-active { color: #10B981; font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 4px 12px; border-radius: 20px; }
+        .info-row { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
+        
+        .status-badge { 
+            color: #fff; font-weight: 600; font-size: 0.85rem;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            padding: 6px 16px; border-radius: 30px; 
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
 
-        /* --- TOGGLE BUTTON (Top Right) --- */
+        /* --- GLASS TOGGLE BUTTON --- */
         .theme-toggle-btn {
-            position: fixed; top: 20px; right: 20px; width: 48px; height: 48px;
-            background-color: var(--btn-bg); border: 1px solid var(--border); border-radius: 50%;
+            position: fixed; top: 25px; right: 25px; width: 52px; height: 52px;
+            background: var(--btn-bg);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
-            box-shadow: var(--btn-shadow); z-index: 1000; outline: none;
+            box-shadow: var(--glass-shadow); z-index: 1000; outline: none;
         }
-        .theme-toggle-btn svg { width: 22px; height: 22px; color: var(--text-primary); }
+        .theme-toggle-btn svg { width: 24px; height: 24px; color: var(--text-primary); }
 
-        /* --- INSTALL PROMPT (Custom for Single File) --- */
+        /* --- GLASS ACTION BUTTON --- */
+        .action-btn {
+            width: 100%; margin-top: 15px; padding: 16px;
+            border: none; border-radius: 16px;
+            background: var(--accent); color: white; font-weight: 700; font-size: 1rem;
+            cursor: pointer; box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .action-btn:active { transform: scale(0.98); }
+
+        /* --- INSTALL BANNER (Glass Style) --- */
         #install-banner {
-            display: none; /* Hidden by default */
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: none;
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 400px;
-            background-color: var(--bg-card);
-            border: 1px solid var(--accent);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            border-radius: 16px;
-            padding: 16px;
-            z-index: 2000;
-            text-align: center;
-            animation: slideUp 0.5s ease-out;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border-radius: 20px;
+            padding: 20px; z-index: 2000; text-align: center;
         }
-        
-        @keyframes slideUp { from { bottom: -100px; opacity: 0; } to { bottom: 20px; opacity: 1; } }
-
-        .install-title { font-weight: 700; margin-bottom: 8px; font-size: 1.1rem; }
+        .install-title { font-weight: 800; margin-bottom: 8px; font-size: 1.2rem; color: var(--text-primary); }
         .install-desc { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; }
-        
-        .install-steps { 
-            text-align: left; background: var(--bg-body); padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem; color: var(--text-primary);
-        }
-        .install-steps li { margin-left: 20px; margin-bottom: 4px; }
-
         .close-banner-btn {
-            background: var(--border); color: var(--text-primary); border: none;
-            padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;
+            background: var(--text-primary); color: var(--bg-gradient); border: none;
+            padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%;
         }
 
     </style>
@@ -131,40 +152,37 @@
     <div class="container">
         <div class="header-text">
             <h1>My Ledger</h1>
-            <p>Professional Expense Manager</p>
+            <p>Professional Expense Tracker</p>
         </div>
 
-        <div class="card">
+        <div class="glass-card">
             <div class="card-label">Total Balance</div>
             <div class="balance">₹ 12,450</div>
             <div class="info-row">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="status-active">Active</span>
+                <div style="display:flex; align-items:center;">
+                    <span class="status-badge">Active</span>
                 </div>
                 <div style="text-align: right;">
                     <div class="card-label">Next Payment</div>
-                    <div style="font-weight: 700; font-size: 1.1rem;">24 Nov</div>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-primary);">24 Nov</div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
+        <div class="glass-card">
             <div class="card-label">Recent Activity</div>
-            <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
-                Added entry for <strong>Default Client</strong>.<br>
-                Session Duration: 4h 30m
+            <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.6; font-weight: 500;">
+                Last entry for <strong>Default Client</strong>.<br>
+                <span style="opacity: 0.7; font-size: 0.9rem;">Today, 4h 30m duration</span>
             </p>
+            <button class="action-btn">View History</button>
         </div>
     </div>
 
     <div id="install-banner">
         <div class="install-title">Install App 📲</div>
-        <p class="install-desc">For the best experience, install this as an app.</p>
-        <ul class="install-steps">
-            <li>1. Tap the <strong>3 Dots</strong> (Menu) at top right.</li>
-            <li>2. Select <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong>.</li>
-        </ul>
-        <button class="close-banner-btn" onclick="document.getElementById('install-banner').style.display='none'">Got it!</button>
+        <p class="install-desc">Turn this website into a full-screen app for the best glass experience.</p>
+        <button class="close-banner-btn" onclick="document.getElementById('install-banner').style.display='none'">Close</button>
     </div>
 
     <script>
@@ -175,7 +193,7 @@
             system: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />'
         };
 
-        // --- THEME LOGIC ---
+        // --- LOGIC ---
         const modes = ['system', 'light', 'dark'];
         let currentModeIndex = 0;
         const metaTag = document.getElementById('theme-meta');
@@ -183,7 +201,7 @@
         const iconSvg = document.getElementById('themeIcon');
 
         function initTheme() {
-            const savedMode = localStorage.getItem('theme-mode') || 'system';
+            const savedMode = localStorage.getItem('glass-theme') || 'system';
             currentModeIndex = modes.indexOf(savedMode);
             applyMode(savedMode);
         }
@@ -197,16 +215,16 @@
                 window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', handleSystemTheme);
                 setThemeAttributes(mode);
             }
-            localStorage.setItem('theme-mode', mode);
+            localStorage.setItem('glass-theme', mode);
         }
 
         function setThemeAttributes(themeType) {
             if (themeType === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                metaTag.setAttribute('content', '#0F172A');
+                metaTag.setAttribute('content', '#0f0c29'); // Match Dark Gradient Top
             } else {
                 document.documentElement.setAttribute('data-theme', 'light');
-                metaTag.setAttribute('content', '#F8FAFC');
+                metaTag.setAttribute('content', '#E3F2FD'); // Match Light Gradient Top
             }
         }
 
@@ -221,18 +239,14 @@
             applyMode(modes[currentModeIndex]);
         });
 
-        // --- INSTALL PROMPT LOGIC (Single File) ---
-        // Check if running in standalone (App) mode
+        // Install Banner
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        
-        // If NOT in app mode, show the banner after 2 seconds
         if (!isStandalone) {
-            setTimeout(() => {
-                document.getElementById('install-banner').style.display = 'block';
-            }, 2000);
+            setTimeout(() => { document.getElementById('install-banner').style.display = 'block'; }, 2500);
         }
 
         initTheme();
     </script>
 </body>
-</html>
+                </html>
+    
