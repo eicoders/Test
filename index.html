@@ -292,69 +292,127 @@
     });
 
     // Load Saved Email
-    if(localStorage.getItem('saved_email')) {
-        document.getElementById('loginEmail').value = localStorage.getItem('saved_email');
-        document.getElementById('rememberMe').checked = true;
+   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<div id="debugConsole" style="background: #000; color: #0f0; padding: 20px; margin: 20px; border: 2px solid red; font-family: monospace; display: none;">
+    <h3>DEBUG LOG (Screenshot this error):</h3>
+    <p id="logOutput"></p>
+</div>
+
+<script>
+    // --- ERROR CATCHER SYSTEM ---
+    const debugBox = document.getElementById('debugConsole');
+    const logOutput = document.getElementById('logOutput');
+
+    function showLog(message, isError = false) {
+        debugBox.style.display = 'block';
+        const color = isError ? 'red' : '#0f0';
+        logOutput.innerHTML += `<span style="color:${color}">> ${message}</span><br><hr>`;
+        // Scroll to bottom
+        window.scrollTo(0, document.body.scrollHeight);
     }
 
-    // --- 5. RECOVERY (Find Email by Mobile) ---
-    async function getEmailFromInput(input) {
-        if(input.includes('@')) return input;
-        // Search Firestore for mobile
-        const snapshot = await db.collection("users").where("mobile", "==", input).get();
-        if (snapshot.empty) throw new Error("User not found with this mobile.");
-        return snapshot.docs[0].data().email;
-    }
+    // Catch Global Errors
+    window.onerror = function(message, source, lineno, colno, error) {
+        showLog("SYSTEM ERROR: " + message, true);
+    };
 
-    window.sendMagicLink = async () => {
-        const input = document.getElementById('recoveryInput').value;
-        const msg = document.getElementById('recoveryMsg');
-        if(!input) return;
-        msg.innerText = "Sending...";
-        
-        try {
-            const email = await getEmailFromInput(input);
-            const actionCodeSettings = { url: window.location.href, handleCodeInApp: true };
-            
-            await auth.sendSignInLinkToEmail(email, actionCodeSettings);
-            window.localStorage.setItem('emailForSignIn', email);
-            msg.innerText = "Link sent to " + email;
-            msg.className = "message-box success";
-        } catch (e) {
-            msg.innerText = e.message;
-            msg.className = "message-box error";
+    // --- FIREBASE CONFIG ---
+    // TODO: यहाँ अपनी असली Keys ध्यान से चेक करें
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",  // <--- इसे चेक करें
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Initialize
+    let auth, db;
+    try {
+        if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+            throw new Error("आपने कोड में API KEY नहीं बदली है!");
         }
+        firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.firestore();
+        showLog("Firebase Connected. Ready to Sign Up.");
+    } catch (e) {
+        showLog("CONFIG ERROR: " + e.message, true);
     }
 
-    window.sendResetPass = async () => {
-        const input = document.getElementById('recoveryInput').value;
-        const msg = document.getElementById('recoveryMsg');
-        if(!input) return;
-        msg.innerText = "Sending...";
+    // --- SIGN UP LOGIC ---
+    document.getElementById('signupForm').addEventListener('submit', (e) => {
+        e.preventDefault();
         
-        try {
-            const email = await getEmailFromInput(input);
-            await auth.sendPasswordResetEmail(email);
-            msg.innerText = "Reset link sent to " + email;
-            msg.className = "message-box success";
-        } catch (e) {
-            msg.innerText = e.message;
-            msg.className = "message-box error";
-        }
-    }
+        const btn = document.getElementById('btnRegister');
+        const email = document.getElementById('regEmail').value;
+        const pass = document.getElementById('regPass').value;
+        const fName = document.getElementById('regFName').value;
+        const lName = document.getElementById('regLName').value;
+        const mobile = document.getElementById('regMobile').value;
 
-    // Check Magic Link Login on Load
-    if (auth.isSignInWithEmailLink(window.location.href)) {
-        let email = window.localStorage.getItem('emailForSignIn');
-        if (!email) email = window.prompt('Please provide your email for confirmation');
-        auth.signInWithEmailLink(email, window.location.href)
-            .then((result) => {
-                window.localStorage.removeItem('emailForSignIn');
-                alert("Logged in via Magic Link!");
+        btn.innerText = "PROCESSING...";
+        btn.disabled = true;
+        showLog("Starting Signup process...");
+
+        // 1. Create User
+        auth.createUserWithEmailAndPassword(email, pass)
+            .then((cred) => {
+                showLog("User Created! Saving Data...");
+                const user = cred.user;
+                user.updateProfile({ displayName: fName + " " + lName });
+
+                // 2. Save to Firestore
+                return db.collection("users").doc(user.uid).set({
+                    firstName: fName, lastName: lName, email: email, mobile: mobile
+                }).then(() => user);
             })
-            .catch((error) => console.log(error));
-    }
+            .then((user) => {
+                showLog("Data Saved. Sending Email...");
+                // 3. Send Email
+                user.sendEmailVerification()
+                .then(() => {
+                    showLog("Email Sent! SUCCESS.");
+                    alert("Account Created! Check your email.");
+                    auth.signOut();
+                    // Reset UI
+                    btn.innerText = "Sign Up";
+                    btn.disabled = false;
+                    document.getElementById('signupForm').reset();
+                });
+            })
+            .catch((error) => {
+                // ERROR HANDLING
+                console.error(error);
+                showLog("FAILED: " + error.code + " - " + error.message, true);
+                
+                if(error.code === 'auth/unauthorized-domain') {
+                    alert("DOMAIN ERROR: Firebase Console में 'eicoders.github.io' को Authorized Domains में add करें।");
+                } else {
+                    alert("ERROR: " + error.message);
+                }
+                
+                btn.innerText = "Sign Up";
+                btn.disabled = false;
+            });
+    });
 
+    // --- UI HELPERS ---
+    const container = document.getElementById('mainContainer');
+    document.getElementById('signUpBtn').addEventListener('click', () => container.classList.add("right-panel-active"));
+    document.getElementById('signInBtn').addEventListener('click', () => container.classList.remove("right-panel-active"));
+    window.showSignupMobile = () => container.classList.add("mobile-show-signup");
+    window.showLoginMobile = () => container.classList.remove("mobile-show-signup");
+    window.toggleVisibility = (id, icon) => {
+        const x = document.getElementById(id);
+        if (x.type === "password") { x.type = "text"; icon.classList.replace('fa-eye', 'fa-eye-slash'); }
+        else { x.type = "password"; icon.classList.replace('fa-eye-slash', 'fa-eye'); }
+    }
 </script>
+
 </body>
 </html>
